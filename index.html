@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090a0d">
+<meta name="description" content="PARVOX Smart Control for ESP32 Bluetooth speakers">
+<link rel="manifest" href="manifest.webmanifest">
+<title>PARVOX Smart Control</title>
+<style>
+:root{color-scheme:dark;--bg:#090a0d;--panel:#15171c;--panel2:#1d2027;--silver:#d9dde5;--muted:#9299a6;--line:#30343d;--accent:#c7ccd5;--green:#75d69a;--red:#ff7777}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -15%,#30343d 0%,#111319 35%,var(--bg) 72%);color:#f4f5f7;font-family:Inter,Roboto,system-ui,-apple-system,sans-serif;min-height:100vh}
+.wrap{max-width:540px;margin:auto;padding:22px 16px 42px}
+header{display:flex;align-items:center;justify-content:space-between;margin:6px 2px 22px}
+.brand{display:flex;align-items:center;gap:12px}.mark{width:43px;height:43px;border:1px solid #aeb4bf;border-radius:13px;display:grid;place-items:center;font-weight:800;letter-spacing:-2px;color:#f4f5f7;background:linear-gradient(145deg,#343943,#101216);box-shadow:0 7px 24px #0008}.brand h1{font-size:19px;letter-spacing:2.5px;margin:0}.brand small{display:block;color:var(--muted);font-size:9px;letter-spacing:2px;margin-top:3px}
+.pill{border:1px solid var(--line);border-radius:999px;padding:7px 10px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:7px}.dot{width:7px;height:7px;border-radius:50%;background:#777}.dot.on{background:var(--green);box-shadow:0 0 9px #75d69a88}
+.hero{padding:20px;border:1px solid #343943;border-radius:22px;background:linear-gradient(145deg,#20242c,#111318 75%);box-shadow:0 18px 45px #0005;margin-bottom:15px}
+.eyebrow{font-size:10px;letter-spacing:2px;color:#aeb4bf}.hero h2{font-size:27px;margin:8px 0 5px;letter-spacing:1px}.hero p{font-size:12px;color:var(--muted);line-height:1.5;margin:0 0 17px}
+button{font:inherit;cursor:pointer;border:0}.primary{background:linear-gradient(135deg,#e5e8ed,#aeb5c0);color:#111318;padding:12px 16px;border-radius:12px;font-weight:750;letter-spacing:.2px}.secondary{background:#252932;border:1px solid #3a404b;color:#e9ebef;padding:10px 13px;border-radius:11px}.danger{color:#ffb0b0;border-color:#704044}
+.statusline{display:flex;justify-content:space-between;align-items:center;margin-top:15px;color:var(--muted);font-size:11px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.card{background:linear-gradient(150deg,#1a1d24,#111318);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:13px;box-shadow:0 10px 28px #0003}
+.card h3{margin:0 0 14px;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#dce0e7}.sub{font-size:11px;color:var(--muted);line-height:1.45}
+.batteryrow{display:flex;align-items:center;justify-content:space-between}.big{font-size:29px;font-weight:750;letter-spacing:-1px}.batteryicon{width:34px;height:18px;border:1.8px solid #bfc5cf;border-radius:4px;position:relative;padding:2px}.batteryicon:after{content:"";position:absolute;right:-5px;top:5px;width:3px;height:7px;background:#bfc5cf;border-radius:0 2px 2px 0}.batteryfill{height:100%;width:65%;background:var(--green);border-radius:2px}
+label{display:block;font-size:12px;color:#c4c9d2;margin:13px 0 8px}input[type=range]{width:100%;accent-color:#d4d8df}input[type=color]{width:100%;height:43px;border:1px solid #454b56;border-radius:11px;background:#171a20;padding:4px}
+.value{float:right;color:#fff;font-variant-numeric:tabular-nums}.btnrow{display:flex;gap:8px;flex-wrap:wrap}.btnrow button{flex:1;min-width:90px}
+.modegrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.modegrid button{padding:12px 8px}
+footer{text-align:center;color:#727987;font-size:10px;letter-spacing:1.4px;margin-top:14px}
+.note{border-left:3px solid #aeb5c0;padding:9px 11px;background:#1a1d23;border-radius:0 9px 9px 0;color:#b9c0ca;font-size:11px;line-height:1.5;margin-top:12px}
+.hidden{display:none!important}
+@media(max-width:380px){.grid{grid-template-columns:1fr}.hero h2{font-size:23px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="brand"><div class="mark">PV</div><div><h1>PARVOX</h1><small>SMART CONTROL</small></div></div>
+  <div class="pill"><span id="dot" class="dot"></span><span id="connLabel">NOT CONNECTED</span></div>
+</header>
+
+<section class="hero">
+  <div class="eyebrow">WIRELESS AUDIO SYSTEM</div>
+  <h2>Sound. Light. Control.</h2>
+  <p>Connect to your PARVOX ESP32 controller to manage lighting and speaker settings.</p>
+  <button class="primary" id="connectBtn">CONNECT PARVOX</button>
+  <div class="statusline"><span id="deviceLabel">No controller selected</span><button class="secondary danger" id="disconnectBtn">Disconnect</button></div>
+</section>
+
+<div class="grid">
+  <section class="card">
+    <h3>Battery</h3>
+    <div class="batteryrow"><div><div class="big" id="batteryPct">--%</div><div class="sub" id="batteryVolt">Waiting for data</div></div><div class="batteryicon"><div class="batteryfill" id="batteryFill"></div></div></div>
+    <div class="sub" style="margin-top:12px">Estimated battery level</div>
+  </section>
+  <section class="card">
+    <h3>Audio</h3>
+    <div class="sub">Bluetooth music is paired through Android Bluetooth settings.</div>
+    <label for="volume">Speaker volume <span class="value" id="volumeVal">70%</span></label>
+    <input id="volume" type="range" min="0" max="100" value="70">
+    <div class="sub" style="margin-top:8px">Requires a compatible hardware volume controller in the audio path.</div>
+  </section>
+</div>
+
+<section class="card">
+  <h3>RGB Studio</h3>
+  <div class="grid">
+    <div><label for="color">LED colour</label><input type="color" id="color" value="#c8cdd6"></div>
+    <div><label for="brightness">Brightness <span class="value" id="brightVal">60%</span></label><input id="brightness" type="range" min="0" max="100" value="60"></div>
+  </div>
+  <div class="btnrow" style="margin-top:14px"><button class="secondary" id="applyColor">Apply colour</button><button class="secondary" id="ledOff">LED OFF</button></div>
+  <label>Lighting effects</label>
+  <div class="modegrid">
+    <button class="secondary" data-mode="RAINBOW">🌈 Rainbow</button>
+    <button class="secondary" data-mode="BREATH">◉ Breathing</button>
+    <button class="secondary" data-mode="STATIC">Static colour</button>
+    <button class="secondary" data-mode="OFF">Off</button>
+  </div>
+</section>
+
+<section class="card">
+  <h3>Equalizer</h3>
+  <div class="sub">Interface placeholder. Real bass, mid and treble adjustment needs a compatible DSP/audio processor and matching firmware.</div>
+  <div class="note">Equalizer controls are not active in this starter app. Your TPA3110 is an amplifier, not an equalizer.</div>
+</section>
+
+<section class="card">
+  <h3>Connection details</h3>
+  <div class="sub" id="details">BLE service: not connected<br>Audio: pair PARVOX through Android Bluetooth settings.</div>
+</section>
+<footer>PARVOX • ENGINEERED FOR SOUND</footer>
+</div>
+
+<script>
+const SERVICE='12345678-1234-1234-1234-123456789000';
+const WRITE_CHAR='12345678-1234-1234-1234-123456789001';
+const BATTERY_CHAR='12345678-1234-1234-1234-123456789002';
+let device=null, server=null, writeChar=null, batteryChar=null;
+const $=id=>document.getElementById(id);
+function setConnected(ok){
+  $('dot').classList.toggle('on',ok);
+  $('connLabel').textContent=ok?'CONNECTED':'NOT CONNECTED';
+  $('deviceLabel').textContent=ok?(device?.name||'PARVOX CONTROL'):'No controller selected';
+}
+function send(cmd){
+  if(!writeChar){alert('Connect to PARVOX controller first.');return;}
+  const data=new TextEncoder().encode(cmd);
+  writeChar.writeValue(data).catch(e=>alert('Command failed: '+e.message));
+}
+function showBattery(s){
+  // Accept BAT:11.8 and BATPCT:65 notifications.
+  const v=s.match(/BAT:([0-9.]+)/i), p=s.match(/BATPCT:(\d+)/i);
+  if(v)$('batteryVolt').textContent=v[1]+' V';
+  if(p){const n=Math.max(0,Math.min(100,Number(p[1])));$('batteryPct').textContent=n+'%';$('batteryFill').style.width=n+'%';}
+}
+async function connect(){
+  if(!navigator.bluetooth){alert('Web Bluetooth is unavailable. Open this app in Chrome on Android over HTTPS.');return;}
+  try{
+    device=await navigator.bluetooth.requestDevice({filters:[{name:'PARVOX CONTROL'}],optionalServices:[SERVICE]});
+    device.addEventListener('gattserverdisconnected',()=>{setConnected(false);writeChar=null;batteryChar=null;});
+    server=await device.gatt.connect();
+    const service=await server.getPrimaryService(SERVICE);
+    writeChar=await service.getCharacteristic(WRITE_CHAR);
+    try{
+      batteryChar=await service.getCharacteristic(BATTERY_CHAR);
+      await batteryChar.startNotifications();
+      batteryChar.addEventListener('characteristicvaluechanged',e=>{
+        const val=new TextDecoder().decode(e.target.value);
+        showBattery(val);
+      });
+    }catch(e){$('batteryVolt').textContent='Battery telemetry not configured';}
+    setConnected(true);
+    $('details').innerHTML='BLE service connected<br>Audio: pair PARVOX through Android Bluetooth settings.';
+  }catch(e){alert('Connection not completed: '+e.message);}
+}
+$('connectBtn').addEventListener('click',connect);
+$('disconnectBtn').addEventListener('click',()=>{if(device?.gatt?.connected)device.gatt.disconnect();setConnected(false);});
+$('volume').addEventListener('input',e=>{$('volumeVal').textContent=e.target.value+'%';});
+$('volume').addEventListener('change',e=>send('VOL:'+e.target.value));
+$('brightness').addEventListener('input',e=>{$('brightVal').textContent=e.target.value+'%';});
+$('brightness').addEventListener('change',e=>send('BRIGHT:'+e.target.value));
+$('applyColor').addEventListener('click',()=>{
+ const h=$('color').value;
+ const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);
+ send(`COLOR:${r},${g},${b}`);
+});
+$('ledOff').addEventListener('click',()=>send('LED:OFF'));
+document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{
+ const m=b.dataset.mode;send(m==='OFF'?'LED:OFF':`MODE:${m}`);
+}));
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+</script>
+</body>
+</html>
